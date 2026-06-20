@@ -2,6 +2,8 @@
 
 > Markdown → richly-styled WeChat Official Account articles. Chrome Extension injects formatted HTML directly into the WeChat editor DOM, bypassing the platform's paste filter entirely.
 
+![Screenshot](OATA.png)
+
 ## The Problem
 
 WeChat's built-in editor aggressively sanitizes pasted HTML. Background colors, code blocks, border-radius, and even `<div>` tags are silently stripped or rewritten. Existing Markdown-to-WeChat tools rely on clipboard copy-paste, which means formatting survival is probabilistic at best.

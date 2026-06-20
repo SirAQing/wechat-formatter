@@ -17,6 +17,9 @@ desktop.ini
 *.pem
 *.crx
 
+# Chinese docs — local only, not pushed to GitHub
+README.zh-CN.md
+
 # Dependencies / build (future-proof)
 node_modules/
 dist/
