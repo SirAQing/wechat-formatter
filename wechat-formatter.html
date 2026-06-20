@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号排版转换器</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f7f7f5;
+    color: #2c2c2a;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: #888780; margin: 0 0 18px; }
+  .themes { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .theme-btn {
+    font-size: 13px; padding: 6px 14px; border-radius: 6px;
+    border: 1px solid #d3d1c7; background: #fff; cursor: pointer;
+    color: #2c2c2a; transition: all .15s;
+  }
+  .theme-btn.active { border-width: 2px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .col-label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: #888780; margin-bottom: 6px;
+  }
+  textarea {
+    width: 100%; height: 460px; box-sizing: border-box;
+    border: 1px solid #d3d1c7; border-radius: 8px; padding: 14px;
+    font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 13px;
+    line-height: 1.7; resize: vertical; background: #fff; color: #2c2c2a;
+  }
+  textarea:focus { outline: none; border-color: #888780; }
+  .preview-box {
+    border: 1px solid #d3d1c7; border-radius: 8px; height: 460px;
+    overflow-y: auto; background: #fff;
+  }
+  #preview { padding: 22px; }
+  .copy-btn {
+    display: flex; align-items: center; gap: 6px; font-size: 13px;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid #2c2c2a;
+    background: #2c2c2a; color: #fff; cursor: pointer; font-weight: 500;
+  }
+  .copy-btn:hover { background: #444441; }
+  .copy-btn:active { transform: scale(0.97); }
+  #toast {
+    display: none; margin-top: 12px; font-size: 13px; padding: 10px 14px;
+    border-radius: 8px;
+  }
+  .toast-ok { background: #eaf3de; color: #27500a; }
+  .toast-err { background: #fcebeb; color: #791f1f; }
+  .notes {
+    margin-top: 20px; padding: 14px 18px; background: #eeede8;
+    border-radius: 8px; font-size: 13px; color: #5f5e5a; line-height: 1.8;
+  }
+  .notes b { color: #2c2c2a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>公众号排版转换器</h1>
+  <p class="sub">左侧写 Markdown，右侧是实时预览 —— 预览区域就是真正会被复制走的内容，所见即所得。</p>
+
+  <div class="themes" id="theme-bar"></div>
+
+  <div class="grid">
+    <div>
+      <div class="col-label"><span>Markdown 输入</span></div>
+      <textarea id="md-input" oninput="render()"></textarea>
+    </div>
+    <div>
+      <div class="col-label">
+        <span>预览（会被复制的内容）</span>
+        <button class="copy-btn" onclick="copyToClipboard()">复制到公众号</button>
+      </div>
+      <div class="preview-box"><div id="preview"></div></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div class="notes">
+    <b>已知限制：</b>图片需要先在公众号编辑器里单独上传到素材库（外链图片大概率会被拦截）；普通超链接会保留颜色样式但点击无法跳转（这是微信平台本身的限制，不是工具的问题）；表格、数学公式等复杂结构暂未支持，遇到这类内容建议仍用秀米 / 135编辑器 / mdnice。
+  </div>
+</div>
+
+<script>
+const themes = {
+  mint:  { label: '清新绿', accent: '#0f6e56', heading: '#0f6e56', bold: '#0f6e56', text: '#333333', hr: '#dddddd', quoteBg: '#eef6f1', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' },
+  ink:   { label: '极简黑', accent: '#2c2c2a', heading: '#1a1a1a', bold: '#1a1a1a', text: '#333333', hr: '#dddddd', quoteBg: '#f4f3f0', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' },
+  ocean: { label: '稳重蓝', accent: '#185fa5', heading: '#0c447c', bold: '#185fa5', text: '#333333', hr: '#dddddd', quoteBg: '#eef5fb', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' }
+};
+let currentTheme = 'mint';
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function inlineFormat(text, theme) {
+  text = escapeHtml(text);
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) =>
+    `<img src="${url}" alt="${alt}" style="max-width:100%;display:block;margin:16px auto;border-radius:4px;">`);
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t) =>
+    `<span style="color:${theme.accent};text-decoration:underline;">${t}</span>`);
+  text = text.replace(/\*\*([^*]+)\*\*/g, (m, t) =>
+    `<strong style="font-weight:bold;color:${theme.bold};">${t}</strong>`);
+  text = text.replace(/\*([^*]+)\*/g, (m, t) =>
+    `<em style="font-style:italic;">${t}</em>`);
+  text = text.replace(/`([^`]+)`/g, (m, t) =>
+    `<code style="background:${theme.codeBg};color:${theme.codeText};padding:2px 6px;border-radius:3px;font-family:Consolas,Monaco,monospace;font-size:14px;">${t}</code>`);
+  return text;
+}
+
+function mdToHtml(md, theme) {
+  const lines = md.split('\n');
+  let html = '';
+  let i = 0;
+  let listBuffer = [];
+  let listType = null;
+
+  function flushList() {
+    if (listBuffer.length) {
+      html += listBuffer.join('');
+      listBuffer = [];
+      listType = null;
+    }
+  }
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.trim() === '') { flushList(); i++; continue; }
+
+    if (line.trim().startsWith('```')) {
+      flushList();
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) { codeLines.push(lines[i]); i++; }
+      i++;
+      html += `<pre style="background:${theme.codeBlockBg};color:${theme.codeBlockText};padding:16px;border-radius:6px;overflow-x:auto;margin:16px 0;font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.6;"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`;
+      continue;
+    }
+
+    const headingMatch = line.match(/^(#{1,3})\s+(.*)$/);
+    if (headingMatch) {
+      flushList();
+      const level = headingMatch[1].length;
+      const sizeMap = { 1: '22px', 2: '19px', 3: '17px' };
+      const margin = level === 1 ? '28px 0 18px' : '24px 0 12px';
+      const align = level === 1 ? 'center' : 'left';
+      html += `<h${level} style="font-size:${sizeMap[level]};font-weight:bold;color:${theme.heading};text-align:${align};margin:${margin};line-height:1.4;">${inlineFormat(headingMatch[2], theme)}</h${level}>`;
+      i++;
+      continue;
+    }
+
+    if (/^(-{3,}|\*{3,})$/.test(line.trim())) {
+      flushList();
+      html += `<hr style="border:none;border-top:1px solid ${theme.hr};margin:28px 0;">`;
+      i++;
+      continue;
+    }
+
+    if (line.trim().startsWith('>')) {
+      flushList();
+      const quoteLines = [];
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+        i++;
+      }
+      html += `<blockquote style="border-left:3px solid ${theme.accent};background:${theme.quoteBg};color:${theme.quoteText};padding:12px 18px;margin:18px 0;border-radius:0 4px 4px 0;font-size:15px;line-height:1.8;">${quoteLines.map(l => inlineFormat(l, theme)).join('<br>')}</blockquote>`;
+      continue;
+    }
+
+    const ulMatch = line.match(/^[-*]\s+(.*)$/);
+    if (ulMatch) {
+      if (listType !== 'ul') flushList();
+      listType = 'ul';
+      listBuffer.push(`<section style="margin:10px 0;line-height:1.8;font-size:16px;color:${theme.text};"><span style="color:${theme.accent};margin-right:8px;">\u25cf</span><span>${inlineFormat(ulMatch[1], theme)}</span></section>`);
+      i++;
+      continue;
+    }
+
+    const olMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (olMatch) {
+      if (listType !== 'ol') flushList();
+      listType = 'ol';
+      listBuffer.push(`<section style="margin:10px 0;line-height:1.8;font-size:16px;color:${theme.text};"><span style="color:${theme.accent};font-weight:bold;margin-right:8px;">${olMatch[1]}.</span><span>${inlineFormat(olMatch[2], theme)}</span></section>`);
+      i++;
+      continue;
+    }
+
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgMatch) {
+      flushList();
+      html += `<p style="margin:16px 0;text-align:center;"><img src="${imgMatch[2]}" alt="${imgMatch[1]}" style="max-width:100%;border-radius:4px;"></p>`;
+      i++;
+      continue;
+    }
+
+    flushList();
+    const paraLines = [line];
+    i++;
+    while (
+      i < lines.length && lines[i].trim() !== '' &&
+      !/^#{1,3}\s/.test(lines[i]) && !/^[-*]\s/.test(lines[i]) &&
+      !/^\d+\.\s/.test(lines[i]) && !lines[i].trim().startsWith('>') &&
+      !lines[i].trim().startsWith('```') && !/^(-{3,}|\*{3,})$/.test(lines[i].trim())
+    ) { paraLines.push(lines[i]); i++; }
+    html += `<p style="margin:16px 0;line-height:1.8;font-size:16px;color:${theme.text};">${paraLines.map(l => inlineFormat(l, theme)).join(' ')}</p>`;
+  }
+  flushList();
+  return html;
+}
+
+function render() {
+  const md = document.getElementById('md-input').value;
+  document.getElementById('preview').innerHTML = mdToHtml(md, themes[currentTheme]);
+}
+
+function buildThemeBar() {
+  const bar = document.getElementById('theme-bar');
+  Object.keys(themes).forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'theme-btn' + (key === currentTheme ? ' active' : '');
+    btn.id = 'theme-' + key;
+    btn.textContent = themes[key].label;
+    btn.style.borderColor = themes[key].accent;
+    btn.style.color = key === currentTheme ? themes[key].accent : '#2c2c2a';
+    btn.onclick = () => setTheme(key);
+    bar.appendChild(btn);
+  });
+}
+
+function setTheme(name) {
+  currentTheme = name;
+  Object.keys(themes).forEach(key => {
+    const btn = document.getElementById('theme-' + key);
+    btn.classList.toggle('active', key === name);
+    btn.style.color = key === name ? themes[key].accent : '#2c2c2a';
+  });
+  render();
+}
+
+async function copyToClipboard() {
+  const previewEl = document.getElementById('preview');
+  const htmlContent = previewEl.innerHTML;
+  const textContent = previewEl.innerText;
+  let success = false;
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const item = new ClipboardItem({
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        'text/plain': new Blob([textContent], { type: 'text/plain' })
+      });
+      await navigator.clipboard.write([item]);
+      success = true;
+    }
+  } catch (e) { success = false; }
+
+  if (!success) {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(previewEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      success = document.execCommand('copy');
+      sel.removeAllRanges();
+    } catch (e) { success = false; }
+  }
+
+  const toast = document.getElementById('toast');
+  toast.style.display = 'block';
+  toast.className = success ? 'toast-ok' : 'toast-err';
+  toast.textContent = success
+    ? '已复制富文本，可直接粘贴到公众号草稿箱'
+    : '自动复制失败，请手动选中右侧预览区域后按 Ctrl+C / Cmd+C';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+document.getElementById('md-input').value =
+`# 我为什么非得把整本书重写
+
+四月那本，基于的是 Hermes v0.7.0。现在它已经到 v0.16.0 了。
+
+这两个月它长出来的东西，我列一下你感受：
+
+- 原生桌面 App、浏览器管理面板
+- 简体中文支持、23 个消息平台接入
+- 一群 Agent 协同干活的多 Agent 看板
+- 一套认真写过的安全模型
+
+官方自己把这一版命名为 **「The Surface Release」**，意思就是让你在任何地方都摸得到它。
+
+> GitHub 简介从过去的「self-improving」换成了「The agent that grows with you」。
+
+一个会自己改自己的 Agent，边界到底在哪，谁来看着它？`;
+
+buildThemeBar();
+render();
+</script>
+</body>
+</html>
