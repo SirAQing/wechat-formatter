@@ -12,3 +12,12 @@ desktop.ini
 # Temp files
 *.tmp
 *.log
+
+# Chrome Extension (publish key)
+*.pem
+*.crx
+
+# Dependencies / build (future-proof)
+node_modules/
+dist/
+build/

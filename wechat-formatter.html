@@ -91,11 +91,32 @@
 
 <script>
 const themes = {
-  mint:  { label: '清新绿', accent: '#0f6e56', heading: '#0f6e56', bold: '#0f6e56', text: '#333333', hr: '#dddddd', quoteBg: '#eef6f1', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' },
-  ink:   { label: '极简黑', accent: '#2c2c2a', heading: '#1a1a1a', bold: '#1a1a1a', text: '#333333', hr: '#dddddd', quoteBg: '#f4f3f0', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' },
-  ocean: { label: '稳重蓝', accent: '#185fa5', heading: '#0c447c', bold: '#185fa5', text: '#333333', hr: '#dddddd', quoteBg: '#eef5fb', quoteText: '#555555', codeBg: '#f0f0ee', codeText: '#b3401f', codeBlockBg: '#282c34', codeBlockText: '#abb2bf' }
+  warm: {
+    label: '暖陶色',
+    // 色彩
+    accent: '#C96B3D', heading: '#C96B3D', bold: '#C96B3D', text: '#333333',
+    hr: '#e5ded4', quoteBg: '#FFF8EC', quoteText: '#555555',
+    codeBg: '#f0eeea', codeText: '#b3401f',
+    // 页面布局
+    pageBg: '#F5F5F5', contentBg: '#FAF8F6',
+    fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
+    lineHeight: '2.0', padding: '36px 24px', borderRadius: '8px',
+    // 标题系统
+    h1Size: '34px', h1Weight: '700', h1Margin: '40px 0 24px',
+    h2Size: '28px', h2Weight: '700', h2Color: '#333333', h2Margin: '36px 0 16px',
+    h3Size: '22px', h3Weight: '600', h3Color: '#444444', h3Margin: '28px 0 12px',
+    // 正文
+    bodySize: '17px', bodyLetterSpacing: '0.3px',
+    // 引用块
+    quoteBorder: '4px', quotePadding: '16px 20px', quoteBorderRadius: '6px', quoteSize: '16px',
+    // Mac Terminal 代码块
+    codeBlockStyle: 'terminal',
+    terminalBg: '#1E1E1E', terminalBarBg: '#2A2A2A', terminalText: '#E6EDF3',
+    codeFont: 'Menlo, Monaco, SFMono-Regular, Consolas, monospace',
+    codeBlockFontSize: '14px', codeBlockLineHeight: '2.0',
+  }
 };
-let currentTheme = 'mint';
+let currentTheme = 'warm';
 
 function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -112,7 +133,7 @@ function inlineFormat(text, theme) {
   text = text.replace(/\*([^*]+)\*/g, (m, t) =>
     `<em style="font-style:italic;">${t}</em>`);
   text = text.replace(/`([^`]+)`/g, (m, t) =>
-    `<code style="background:${theme.codeBg};color:${theme.codeText};padding:2px 6px;border-radius:3px;font-family:Consolas,Monaco,monospace;font-size:14px;">${t}</code>`);
+    `<code style="background:${theme.codeBg};color:${theme.codeText};padding:2px 6px;border-radius:3px;font-family:${theme.codeFont || 'Consolas,Monaco,monospace'};font-size:14px;">${t}</code>`);
   return text;
 }
 
@@ -142,7 +163,32 @@ function mdToHtml(md, theme) {
       i++;
       while (i < lines.length && !lines[i].trim().startsWith('```')) { codeLines.push(lines[i]); i++; }
       i++;
-      html += `<pre style="background:${theme.codeBlockBg};color:${theme.codeBlockText};padding:16px;border-radius:6px;overflow-x:auto;margin:16px 0;font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.6;"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`;
+      const codeText = escapeHtml(codeLines.join('\n'));
+      if (theme.codeBlockStyle === 'terminal') {
+        // 公众号兼容方案：table 替代 div/pre，box-shadow→border，overflow 删除，\n→<br>
+        html += `<table style="width:100%;background:${theme.terminalBg};border-radius:12px;border:1px solid #333;margin:24px 0;">
+          <tr>
+            <td style="padding:10px 16px;background:${theme.terminalBarBg};">
+              <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#FF5F57;margin-right:8px;"></span>
+              <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#FEBC2E;margin-right:8px;"></span>
+              <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px;color:${theme.terminalText};font-family:${theme.codeFont || 'Consolas,Monaco,monospace'};line-height:${theme.codeBlockLineHeight || '2.0'};font-size:${theme.codeBlockFontSize || '14px'};">
+              ${codeText.replace(/\n/g,'<br>')}
+            </td>
+          </tr>
+        </table>`;
+      } else {
+        html += `<table style="width:100%;background:${theme.codeBlockBg};border-radius:6px;margin:16px 0;">
+          <tr>
+            <td style="padding:16px;color:${theme.codeBlockText};font-family:${theme.codeFont || 'Consolas,Monaco,monospace'};font-size:13px;line-height:1.6;">
+              ${codeText.replace(/\n/g,'<br>')}
+            </td>
+          </tr>
+        </table>`;
+      }
       continue;
     }
 
@@ -150,10 +196,12 @@ function mdToHtml(md, theme) {
     if (headingMatch) {
       flushList();
       const level = headingMatch[1].length;
-      const sizeMap = { 1: '22px', 2: '19px', 3: '17px' };
-      const margin = level === 1 ? '28px 0 18px' : '24px 0 12px';
+      const sizeMap  = { 1: theme.h1Size || '22px', 2: theme.h2Size || '19px', 3: theme.h3Size || '17px' };
+      const weightMap = { 1: theme.h1Weight || 'bold', 2: theme.h2Weight || 'bold', 3: theme.h3Weight || 'bold' };
+      const colorMap  = { 1: theme.heading, 2: theme.h2Color || theme.heading, 3: theme.h3Color || theme.heading };
+      const marginMap = { 1: theme.h1Margin || '28px 0 18px', 2: theme.h2Margin || '24px 0 12px', 3: theme.h3Margin || '24px 0 12px' };
       const align = level === 1 ? 'center' : 'left';
-      html += `<h${level} style="font-size:${sizeMap[level]};font-weight:bold;color:${theme.heading};text-align:${align};margin:${margin};line-height:1.4;">${inlineFormat(headingMatch[2], theme)}</h${level}>`;
+      html += `<h${level} style="font-size:${sizeMap[level]};font-weight:${weightMap[level]};color:${colorMap[level]};text-align:${align};margin:${marginMap[level]};line-height:1.4;">${inlineFormat(headingMatch[2], theme)}</h${level}>`;
       i++;
       continue;
     }
@@ -172,7 +220,7 @@ function mdToHtml(md, theme) {
         quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
         i++;
       }
-      html += `<blockquote style="border-left:3px solid ${theme.accent};background:${theme.quoteBg};color:${theme.quoteText};padding:12px 18px;margin:18px 0;border-radius:0 4px 4px 0;font-size:15px;line-height:1.8;">${quoteLines.map(l => inlineFormat(l, theme)).join('<br>')}</blockquote>`;
+      html += `<blockquote style="border-left:${theme.quoteBorder || '3px'} solid ${theme.accent};background:${theme.quoteBg};color:${theme.quoteText};padding:${theme.quotePadding || '12px 18px'};margin:20px 0;border-radius:${theme.quoteBorderRadius || '0 4px 4px 0'};font-size:${theme.quoteSize || '15px'};line-height:${theme.lineHeight || '1.8'};${theme.bodyLetterSpacing ? `letter-spacing:${theme.bodyLetterSpacing}` : ''}">${quoteLines.map(l => inlineFormat(l, theme)).join('<br>')}</blockquote>`;
       continue;
     }
 
@@ -180,7 +228,7 @@ function mdToHtml(md, theme) {
     if (ulMatch) {
       if (listType !== 'ul') flushList();
       listType = 'ul';
-      listBuffer.push(`<section style="margin:10px 0;line-height:1.8;font-size:16px;color:${theme.text};"><span style="color:${theme.accent};margin-right:8px;">\u25cf</span><span>${inlineFormat(ulMatch[1], theme)}</span></section>`);
+      listBuffer.push(`<p style="margin:10px 0;line-height:${theme.lineHeight || '1.8'};font-size:${theme.bodySize || '16px'};color:${theme.text};"><span style="color:${theme.accent};margin-right:8px;">\u25cf</span><span>${inlineFormat(ulMatch[1], theme)}</span></p>`);
       i++;
       continue;
     }
@@ -189,7 +237,7 @@ function mdToHtml(md, theme) {
     if (olMatch) {
       if (listType !== 'ol') flushList();
       listType = 'ol';
-      listBuffer.push(`<section style="margin:10px 0;line-height:1.8;font-size:16px;color:${theme.text};"><span style="color:${theme.accent};font-weight:bold;margin-right:8px;">${olMatch[1]}.</span><span>${inlineFormat(olMatch[2], theme)}</span></section>`);
+      listBuffer.push(`<p style="margin:10px 0;line-height:${theme.lineHeight || '1.8'};font-size:${theme.bodySize || '16px'};color:${theme.text};"><span style="color:${theme.accent};font-weight:bold;margin-right:8px;">${olMatch[1]}.</span><span>${inlineFormat(olMatch[2], theme)}</span></p>`);
       i++;
       continue;
     }
@@ -211,7 +259,7 @@ function mdToHtml(md, theme) {
       !/^\d+\.\s/.test(lines[i]) && !lines[i].trim().startsWith('>') &&
       !lines[i].trim().startsWith('```') && !/^(-{3,}|\*{3,})$/.test(lines[i].trim())
     ) { paraLines.push(lines[i]); i++; }
-    html += `<p style="margin:16px 0;line-height:1.8;font-size:16px;color:${theme.text};">${paraLines.map(l => inlineFormat(l, theme)).join(' ')}</p>`;
+    html += `<p style="margin:16px 0;line-height:${theme.lineHeight || '1.8'};font-size:${theme.bodySize || '16px'};color:${theme.text};${theme.bodyLetterSpacing ? `letter-spacing:${theme.bodyLetterSpacing}` : ''}">${paraLines.map(l => inlineFormat(l, theme)).join(' ')}</p>`;
   }
   flushList();
   return html;
@@ -219,7 +267,34 @@ function mdToHtml(md, theme) {
 
 function render() {
   const md = document.getElementById('md-input').value;
-  document.getElementById('preview').innerHTML = mdToHtml(md, themes[currentTheme]);
+  const theme = themes[currentTheme];
+  const bodyHtml = mdToHtml(md, theme);
+
+  document.body.style.background = theme.pageBg || '#f7f7f5';
+
+  const previewEl = document.getElementById('preview');
+  const previewBox = previewEl.parentElement;
+
+  if (theme.contentBg || theme.fontFamily || theme.padding) {
+    const card = [
+      theme.contentBg   ? `background:${theme.contentBg}` : '',
+      theme.fontFamily  ? `font-family:${theme.fontFamily}` : '',
+      theme.padding     ? `padding:${theme.padding}` : '',
+      theme.borderRadius ? `border-radius:${theme.borderRadius}` : '',
+    ].filter(Boolean).join(';');
+
+    previewEl.style.padding = '0';
+    previewEl.style.background = theme.pageBg || 'transparent';
+    previewBox.style.background = theme.pageBg || '#fff';
+
+    // section 兼容公众号，不用 div；不包外层 pageBg（公众号无法保留页面级背景）
+    previewEl.innerHTML = `<section style="${card}">${bodyHtml}</section>`;
+  } else {
+    previewBox.style.background = '#fff';
+    previewEl.style.background = 'transparent';
+    previewEl.style.padding = '22px';
+    previewEl.innerHTML = bodyHtml;
+  }
 }
 
 function buildThemeBar() {
@@ -248,30 +323,32 @@ function setTheme(name) {
 
 async function copyToClipboard() {
   const previewEl = document.getElementById('preview');
-  const htmlContent = previewEl.innerHTML;
-  const textContent = previewEl.innerText;
   let success = false;
 
+  // 优先 execCommand：复制富文本 DOM，公众号识别率远高于 ClipboardItem（后者复制 HTML 源码会被微信重新解析过滤）
   try {
-    if (navigator.clipboard && window.ClipboardItem) {
-      const item = new ClipboardItem({
-        'text/html': new Blob([htmlContent], { type: 'text/html' }),
-        'text/plain': new Blob([textContent], { type: 'text/plain' })
-      });
-      await navigator.clipboard.write([item]);
-      success = true;
-    }
+    const range = document.createRange();
+    range.selectNodeContents(previewEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    success = document.execCommand('copy');
+    sel.removeAllRanges();
   } catch (e) { success = false; }
 
+  // 降级：ClipboardItem API
   if (!success) {
     try {
-      const range = document.createRange();
-      range.selectNodeContents(previewEl);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      success = document.execCommand('copy');
-      sel.removeAllRanges();
+      if (navigator.clipboard && window.ClipboardItem) {
+        const htmlContent = previewEl.innerHTML;
+        const textContent = previewEl.innerText;
+        const item = new ClipboardItem({
+          'text/html': new Blob([htmlContent], { type: 'text/html' }),
+          'text/plain': new Blob([textContent], { type: 'text/plain' })
+        });
+        await navigator.clipboard.write([item]);
+        success = true;
+      }
     } catch (e) { success = false; }
   }
 
