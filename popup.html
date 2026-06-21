@@ -8,78 +8,175 @@
   * { box-sizing: border-box; }
   body {
     width: 680px; min-height: 500px;
-    margin: 0; padding: 16px;
+    margin: 0; padding: 0;
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
     background: #F5F5F5; color: #2c2c2a;
   }
-  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .head h1 { font-size: 15px; font-weight: 600; margin: 0; color: #C96B3D; }
-  .sync-btn {
-    display: flex; align-items: center; gap: 5px; font-size: 12px;
-    padding: 5px 12px; border-radius: 5px;
-    border: 1px solid #C96B3D; background: #C96B3D; color: #fff;
-    cursor: pointer; font-weight: 600; white-space: nowrap;
+
+  .head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e5e2da; }
+  .head h1 { font-size: 14px; font-weight: 600; margin: 0; color: #C96B3D; }
+  .head-r { display: flex; gap: 6px; align-items: center; }
+  .btn {
+    font-size: 12px; padding: 5px 12px; border-radius: 5px;
+    border: 1px solid #C96B3D; cursor: pointer; font-weight: 600; white-space: nowrap;
   }
-  .sync-btn:hover { background: #b85a30; }
-  .sync-btn:active { transform: scale(0.97); }
-  .sync-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: #C96B3D; color: #fff; }
+  .btn-primary:hover { background: #b85a30; }
+  .btn-outline { background: #fff; color: #C96B3D; }
+  .btn-outline:hover { background: #FFF8EC; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-gear { background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px 4px; }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e2da; }
+  .tab {
+    flex: 1; text-align: center; padding: 8px; font-size: 13px;
+    cursor: pointer; color: #888; border-bottom: 2px solid transparent;
+    transition: all .15s;
+  }
+  .tab.active { color: #C96B3D; border-bottom-color: #C96B3D; font-weight: 600; }
+  .panel { display: none; padding: 12px 16px; }
+  .panel.active { display: block; }
 
   textarea {
-    width: 100%; height: 180px; box-sizing: border-box;
-    border: 1px solid #d3d1c7; border-radius: 8px; padding: 12px;
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #d3d1c7; border-radius: 8px; padding: 10px 12px;
     font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 13px;
     line-height: 1.7; resize: vertical; background: #fff; color: #2c2c2a;
     margin-bottom: 10px;
   }
   textarea:focus { outline: none; border-color: #C96B3D; }
+  .ta-draft { height: 140px; }
+  .ta-result { height: 120px; }
+  .ta-md { height: 220px; }
 
-  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .rw-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .rw-controls select {
+    font-size: 12px; padding: 5px 8px; border-radius: 5px;
+    border: 1px solid #d3d1c7; background: #fff; color: #2c2c2a; cursor: pointer;
+  }
+  .rw-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .custom-prompt { display: none; margin-top: 6px; }
+  .custom-prompt.show { display: block; }
+  .custom-prompt textarea { height: 60px; font-size: 12px; }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
   .toolbar-left { display: flex; gap: 4px; align-items: center; }
   .theme-tag { font-size: 11px; color: #888; padding: 3px 8px; background: #f0eeea; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
   .theme-tag.active { border-color: #C96B3D; color: #C96B3D; background: #FFF8EC; font-weight: 600; }
-
-  .preview-label { font-size: 11px; color: #888; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .preview-label { font-size: 11px; color: #888; margin-bottom: 4px; }
   .preview-box {
     border: 1px solid #d3d1c7; border-radius: 8px;
-    max-height: 260px; overflow-y: auto; background: #FAF8F6;
+    max-height: 240px; overflow-y: auto; background: #FAF8F6;
   }
-  #preview { padding: 24px; }
+  #preview { padding: 16px; }
+
+  .settings { display: none; padding: 12px 16px; border-bottom: 1px solid #e5e2da; background: #FFF8EC; }
+  .settings.show { display: block; }
+  .settings label { font-size: 11px; color: #888; display: block; margin-top: 6px; }
+  .settings input {
+    width: 100%; padding: 5px 8px; font-size: 12px; border: 1px solid #d3d1c7;
+    border-radius: 4px; margin-top: 2px; font-family: "SF Mono", Consolas, monospace;
+  }
+  .settings input:focus { outline: none; border-color: #C96B3D; }
 
   #toast {
-    display: none; margin-top: 10px; font-size: 12px; padding: 8px 12px;
+    display: none; margin: 8px 16px; font-size: 12px; padding: 8px 12px;
     border-radius: 6px; text-align: center;
   }
   .toast-ok { background: #eaf3de; color: #27500a; }
   .toast-err { background: #fcebeb; color: #791f1f; }
-  .toast-info { background: #eef5fb; color: #0c447c; }
 
   .tip {
-    margin-top: 8px; font-size: 11px; color: #aaa; text-align: center;
-    line-height: 1.6;
+    padding: 0 16px 10px; font-size: 11px; color: #aaa; text-align: center; line-height: 1.6;
   }
+
+  /* template tab */
+  .tm-cats { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tm-cat { padding: 3px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; border: 1px solid #e0ddd5; background: #fff; color: #888; transition: all .15s; }
+  .tm-cat.active { background: #C96B3D; color: #fff; border-color: #C96B3D; font-weight: 600; }
+  .tm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tm-card { border: 1px solid #e0ddd5; border-radius: 8px; overflow: hidden; background: #fff; }
+  .tm-card-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #f0eeea; }
+  .tm-card-head .tm-label { font-size: 11px; padding: 1px 6px; border-radius: 8px; background: #FFF8EC; color: #C96B3D; font-weight: 500; }
+  .tm-card-head .tm-name { font-size: 12px; font-weight: 500; }
+  .tm-card-preview { padding: 6px 8px; background: #f7f7f5; max-height: 90px; overflow-y: auto; }
+  .tm-card-code { background: #1e1e2e; padding: 6px 8px; max-height: 70px; overflow-y: auto; }
+  .tm-card-code pre { margin: 0; font-size: 10px; line-height: 1.5; color: #cdd6f4; font-family: Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+  .tm-copy { font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid #C96B3D; background: #fff; color: #C96B3D; cursor: pointer; font-weight: 500; }
+  .tm-copy.done { background: #C96B3D; color: #fff; }
 </style>
 </head>
 <body>
 
 <div class="head">
   <h1>公众号排版助手</h1>
-  <button class="sync-btn" id="sync-btn">
-    ⚡ 一键同步到公众号
-  </button>
+  <div class="head-r">
+    <button class="btn-gear" id="gear-btn" title="API 设置">⚙️</button>
+    <button class="btn btn-primary" id="sync-btn">⚡ 一键同步</button>
+  </div>
 </div>
 
-<textarea id="md-input" placeholder="在此粘贴或编写 Markdown..."></textarea>
-
-<div class="toolbar">
-  <div class="toolbar-left" id="theme-bar"></div>
-  <button class="sync-btn" id="copy-btn" style="background:#fff;color:#C96B3D;">复制</button>
+<div class="settings" id="settings-panel">
+  <label>API Base URL</label>
+  <input id="cfg-url" placeholder="https://api.deepseek.com/v1">
+  <label>API Key</label>
+  <input id="cfg-key" type="password" placeholder="sk-...">
+  <label>Model</label>
+  <input id="cfg-model" placeholder="deepseek-chat">
+  <label>Temperature</label>
+  <input id="cfg-temperature" placeholder="0.7">
+  <div style="margin-top:8px;display:flex;gap:6px;">
+    <button class="btn btn-primary" id="cfg-save">保存</button>
+    <button class="btn btn-outline" id="cfg-reset">重置默认</button>
+  </div>
 </div>
 
-<div class="preview-label"><span>预览（同步 / 复制的内容）</span></div>
-<div class="preview-box"><div id="preview"></div></div>
+<div class="tabs">
+  <div class="tab active" data-tab="rewrite">✍️ 改写</div>
+  <div class="tab" data-tab="format">🎨 排版</div>
+  <div class="tab" data-tab="template">📋 模板</div>
+</div>
+
+<!-- ============ 改写 Tab ============ -->
+<div class="panel active" id="panel-rewrite">
+  <textarea class="ta-draft" id="draft-input" placeholder="在此粘贴草稿、笔记、大纲..."></textarea>
+  <div class="rw-controls">
+    <select id="style-select"></select>
+    <span style="font-size:11px;color:#888;cursor:pointer;" id="custom-toggle">⚙ 自定义 prompt</span>
+  </div>
+  <div class="custom-prompt" id="custom-prompt-box">
+    <textarea placeholder="自定义 system prompt（将覆盖上方风格预设）"></textarea>
+  </div>
+  <button class="btn btn-primary" id="rewrite-btn">🤖 AI 改写</button>
+  <button class="btn btn-outline" id="smart-format-btn" style="margin-left:4px;">🎨 智能排版</button>
+  <textarea class="ta-result" id="result-output" placeholder="改写结果将显示在这里，可直接编辑..." style="margin-top:8px;"></textarea>
+  <div class="rw-actions">
+    <button class="btn btn-outline" id="retry-btn" disabled>🔄 重新改写</button>
+    <button class="btn btn-outline" id="copy-result-btn" disabled>📋 复制</button>
+    <button class="btn btn-primary" id="send-to-format-btn" disabled>→ 发送到排版</button>
+  </div>
+</div>
+
+<!-- ============ 排版 Tab ============ -->
+<div class="panel" id="panel-format">
+  <textarea class="ta-md" id="md-input" placeholder="Markdown 内容..."></textarea>
+  <div class="toolbar">
+    <div class="toolbar-left" id="theme-bar"></div>
+    <button class="btn btn-outline" id="copy-btn">复制</button>
+  </div>
+  <div class="preview-label"><span>预览</span></div>
+  <div class="preview-box"><div id="preview"></div></div>
+</div>
+
+<!-- ============ 模板 Tab ============ -->
+<div class="panel" id="panel-template">
+  <div class="tm-cats" id="tm-cats"></div>
+  <div class="tm-grid" id="tm-grid"></div>
+</div>
 
 <div id="toast"></div>
-<div class="tip">在公众号图文编辑页面打开此插件，点击「一键同步」即可直注编辑器</div>
+<div class="tip">在公众号图文编辑页面打开，改写 → 排版 → 一键同步</div>
 
 <script src="popup.js"></script>
 </body>

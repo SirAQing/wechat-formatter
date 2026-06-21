@@ -3,7 +3,12 @@
   "name": "公众号排版助手",
   "version": "1.0",
   "description": "Markdown → 公众号富文本，一键直注微信编辑器，绕过剪贴板过滤",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://api.deepseek.com/*",
+    "https://api.moonshot.cn/*",
+    "https://api.openai.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "公众号排版助手"
